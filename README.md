@@ -27,6 +27,7 @@ Independent VMFS3 and VMFS5 images; reject VMFS6, incomplete extents and unquali
 ## 7. Technical references and provenance
 
 - [Pinned central source baseline](https://github.com/Infiltrator-Projects/Filesystems/tree/101026021d9088d80b7f0f472d9061f0e2c688a3/native/filesystems/vmfs)
+- [Native design](native/filesystems/vmfs/DESIGN.md)
 - [Migration and qualification plan](MIGRATION_STATUS.md)
 - [Project philosophy](docs/PHILOSOPHY.md)
 - [Common ABI](https://github.com/Infiltrator-Projects/Libraries)
