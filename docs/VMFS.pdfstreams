@@ -1,0 +1,645 @@
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (Scope, history and source) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(VMware VMFS is a clustered datastore filesystem used to store virtual-machine) Tj
+T* (disks, configuration and other files on shared storage. This chapter treats) Tj
+T* (the VMFS3 and VMFS5 layouts separately from VMFS6. VMFS5 introduced a unified) Tj
+T* (block-size strategy for newly formatted volumes and expanded scalability;) Tj
+T* (upgraded volumes may retain older geometry. The field-level evidence is) Tj
+T* (Christophe Fillot and Mike Hommey's reverse-engineered vmfs-tools, commit) Tj
+T* (4ab76ef5b074bdf06e4b518ff6d50439de05ae7f. Its volume reader accepts versions) Tj
+T* (3 and 5 and explicitly restricts VMFS5 write access. The following is not an) Tj
+T* (official complete vendor on-disk specification.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 1 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (Physical volume and filesystem information) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(The observed partition-relative volume information begins at 0x100000, with) Tj
+T* (little-endian magic 0xC001D00D at offset 0 and 32-bit volume version at 4.) Tj
+T* (LUN byte is at 14, 28-byte name at 18, 32-bit physical-size field at 95 and) Tj
+T* (16-byte volume UUID at 130. The reference describes the physical-size field) Tj
+T* (as scaled by 256; validate its unit against known media. The filesystem) Tj
+T* (address space starts 0x1000000 bytes after the volume-information base.) Tj
+T* (Within the assembled logical volume, filesystem information begins at) Tj
+T* (0x200000 and has magic 0x2FABF15E. For a single partition and first extent) Tj
+T* (beginning at segment zero, that corresponds to partition byte 0x1300000. For) Tj
+T* (a whole-disk image, add the actual partition start. Validate partition) Tj
+T* (boundaries rather than assuming a legacy MBR.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 2 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (Filesystem information field inventory) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(Relative to the filesystem information record: magic 0, volume version 4,) Tj
+T* (one-byte filesystem version 8, 16-byte UUID 9, mode 25, 128-byte label 29,) Tj
+T* (device-block-size field 157, 64-bit filesystem block size 161, 32-bit) Tj
+T* (creation-time field 169, unknown four bytes 173, LVM UUID 177, unknown) Tj
+T* (sixteen bytes 193, FDC header size 209, FDC bitmap count 213 and subblock) Tj
+T* (size 217. Decode fixed-width little-endian numbers without assuming host) Tj
+T* (structure alignment. Verify sizes, member identity, version and metadata) Tj
+T* (geometry before using block addressing. Preserve the unknown fields; the) Tj
+T* (timestamp interpretations are reference observations rather than a complete) Tj
+T* (vendor specification.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 3 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (Logical-volume extent assembly) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(The LVM information contains total logical size and block-count fields at) Tj
+T* (relative offsets 0 and 8, textual UUID at 20 \(35 bytes\), binary UUID at 84,) Tj
+T* (creation-time field 104, number of segments 116, first segment 120, last) Tj
+T* (segment 128, modification-time field 136 and extent count 144. The reference) Tj
+T* (maps extents in 256 MiB segments, with inclusive first and last segment) Tj
+T* (numbers. For logical byte p, choose the member covering floor\(p/268435456\);) Tj
+T* (its data-relative offset is p minus first_segment times 268435456. Add the) Tj
+T* (member's actual volume base and data prefix. Split cross-member reads.) Tj
+T* (Validate UUIDs, complete nonoverlapping coverage, member sizes and) Tj
+T* (arithmetic; a missing member is not a sparse file hole.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 4 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (VMFS3/5 extent header and root discovery) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(For this reference, the LVM record begins 0x200 bytes after volume) Tj
+T* (information. The logical heartbeat area begins at 0x300000 and contains 2048) Tj
+T* (records of 512 bytes. The reference computes its initial FDC bootstrap block) Tj
+T* (as max\(1, floor\(\(0x300000+2048*512\)/filesystem_block_size\)\). It opens a) Tj
+T* (temporary one-block metadata mapping at that position, obtains descriptor) Tj
+T* (entry 0, item 0 as the root, then resolves the actual allocator files by name) Tj
+T* (from that directory. The bootstrap is an observed reader strategy and must be) Tj
+T* (corroborated on authentic volumes; do not confuse the temporary descriptor) Tj
+T* (with a stored inode.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 5 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (Metadata ownership header) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(The decoded common prefix holds magic at 0 \(32 bits\), logical object position) Tj
+T* (at 4 \(64 bits\), heartbeat position at 12, heartbeat sequence at 20, object) Tj
+T* (sequence at 28, lock indicator at 36 \(32 bits\), 16-byte locking-host UUID at) Tj
+T* (40 and modification-time field at 56 \(64 bits\). Remaining header bytes are) Tj
+T* (not fully interpreted by the reference. Validate object identity, expected) Tj
+T* (magic and address space; keep position, lock state and timestamps separate.) Tj
+T* (Heartbeat records use observed active/inactive magic values 0xABCDEF02 and) Tj
+T* (0xABCDEF01. Never clear locks, declare another host dead, or treat a storage) Tj
+T* (reservation as sufficient proof of exclusive ownership merely from these) Tj
+T* (fields.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 6 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (File descriptor fields) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(Offsets relative to the end of the metadata header are: ID 0, second ID 4,) Tj
+T* (link count 8, file type 12, flags 16, 64-bit logical byte length 20,) Tj
+T* (allocation block size 28, block count 36, then 32-bit mtime 44, ctime 48,) Tj
+T* (atime 52, UID 56, GID 60, mode 64, allocation scheme \(ZLA\) 68, to-be-zeroed) Tj
+T* (field 72, copy-on-write field 76 and unknown bytes 80..511. The descriptor) Tj
+T* (magic is 0x10C00001. File type and allocation scheme determine whether the) Tj
+T* (subsequent union contains inline bytes, encoded allocation references or a) Tj
+T* (raw-device mapping identifier. Raw-device mappings are not ordinary resident) Tj
+T* (payload. Validate size, pointer capacity and mode rather than trusting a) Tj
+T* (plausible inode signature.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 7 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (VMFS3/5 descriptor and block IDs) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(Metadata headers occupy 512 bytes, file descriptors 2048 bytes. The) Tj
+T* (allocation union begins at descriptor byte 1024 and holds 256 little-endian) Tj
+T* (32-bit block IDs or 1024 inline bytes. Block type is bits 0..2: 0 absent, 1) Tj
+T* (file block, 2 subblock, 3 pointer block and 4 file descriptor. File-block) Tj
+T* (item is bits 6..31; flags 3..5, with flag value 4 indicating to-be-zeroed.) Tj
+T* (Pointer-block entry is bits 6..27 and item bits 28..31. Descriptor entry is) Tj
+T* (bits 6..21 and item bits 22..31. Subblock entry occupies bits 6..27, item low) Tj
+T* (four bits are in 28..31 and high two bits in 3..4; bit 5 is a flag of) Tj
+T* (uncertain semantics. Decode each type separately.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 8 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (Allocation catalogue principles) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(The filesystem uses metadata files for file blocks \(.fbb.sf\), subblocks) Tj
+T* (\(.sbc.sf\), pointer blocks \(.pbc.sf\) and file descriptors \(.fdc.sf\). Their) Tj
+T* (magic values are 0x10C00002 through 0x10C00005 respectively. A bitmap file's) Tj
+T* (header describes items per entry, bitmap entries per area, header size,) Tj
+T* (item-data size, area size, total items and area count. Allocation entries) Tj
+T* (contain a common ownership header followed by entry ID, total item count,) Tj
+T* (free count, first-free hint and 496 bitmap bytes in the observed format. The) Tj
+T* (pinned VMFS3/5 implementation uses set bits for free items and clear bits for) Tj
+T* (allocated items; verify that convention for each admitted revision. Counts) Tj
+T* (and first-free hints must agree with validated bits. Check unused tail bits) Tj
+T* (and metadata ownership before allocation.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 9 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (Bitmap item address calculation) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(Let I be items per bitmap entry, E entries per area, H header size, A area) Tj
+T* (size, D data bytes per item and S persistent bitmap-entry stride. A requested) Tj
+T* (entry e and item i map to n=e*I+i. Area is floor\(n/\(I*E\)\), and the item) Tj
+T* (position within the bitmap file is H+area*A+E*S+\(n modulo \(I*E\)\)*D. These are) Tj
+T* (file-relative addresses, not raw disk locations. Resolve the metadata file's) Tj
+T* (own mapping before reading. In the observed bitmap, the local item index) Tj
+T* (selects byte floor\(index/8\) and bit index modulo 8. Reject zero sizes,) Tj
+T* (overflows, item indexes beyond the last entry and self-referential metadata) Tj
+T* (chains.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 10 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (VMFS3/5 file lookup and worked example) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(ZLA selects direct file/subblock mapping or pointer-block mapping; the) Tj
+T* (reference subtracts 4301 for its observed VMFS5 extended encoding. For direct) Tj
+T* (mapping, divide logical byte offset by inode block size and select the) Tj
+T* (indexed descriptor entry. For a pointer-block array containing P bytes, there) Tj
+T* (are P/4 references; divide the logical block index by that count to select) Tj
+T* (the primary pointer and use the remainder to select its entry. Resolve the) Tj
+T* (pointer object through PBC metadata. For an ordinary file-block ID) Tj
+T* (0x00001901, type is 1 and item is 100. If filesystem block size is 1 MiB, the) Tj
+T* (logical-volume byte position is 104857600 plus the intra-block offset.) Tj
+T* (Unallocated or to-be-zeroed storage must not reveal residual physical) Tj
+T* (contents. Inline extended descriptors and RDM objects require distinct) Tj
+T* (treatment.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 11 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (VMFS3/5 directory organisation) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(A directory is a file containing fixed 140-byte records \(0x8C\). Record fields) Tj
+T* (are 32-bit type at 0, block ID at 4, record ID at 8 and 128 name bytes at 12.) Tj
+T* (Record n starts at n*140 relative to the directory file. A reader resolves) Tj
+T* (the descriptor using the type-specific block ID, validates record bounds and) Tj
+T* (compares bounded names. Interpret dot and dot-dot entries and symbolic) Tj
+T* (references with loop bounds. Check each directory target against the) Tj
+T* (descriptor ID and link count. Do not use this flat layout for VMFS6; that) Tj
+T* (generation has different directory records and page metadata.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 12 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (Integrity and shared-storage semantics) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(VMFS is designed for simultaneous access by hypervisor hosts. Logical) Tj
+T* (ownership, distributed metadata locks, heartbeats, fencing and recovery) Tj
+T* (ordering are critical; a static image reader is not a cluster participant. A) Tj
+T* (stable offline image can be checked by comparing descriptor identities,) Tj
+T* (directory links, allocation bitmaps, pointer blocks, actual payload coverage) Tj
+T* (and all member boundaries. Record contradictions without modifying the) Tj
+T* (source. VMDK descriptor and snapshot/delta-chain formats sit above VMFS and) Tj
+T* (are distinct from filesystem allocation metadata. Do not infer VMFS journal) Tj
+T* (replay, lock expiry, atomic update or reclamation rules from a VMDK parser.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 13 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (Writer and defragmentation boundary) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(An independent writer requires exact native allocation transitions, metadata) Tj
+T* (update ordering, durable flush and recovery semantics, and proven exclusion) Tj
+T* (of every other host. Moving a file block changes its ownership and every) Tj
+T* (reference; subblock and pointer-block relocation also changes catalogue) Tj
+T* (metadata. An apparent free bitmap bit alone does not authorise reuse while) Tj
+T* (another host may hold a valid reference. Formatting must establish coherent) Tj
+T* (extent metadata, filesystem information, root descriptor, allocator) Tj
+T* (catalogues, heartbeats and recovery state. The available reverse-engineering) Tj
+T* (evidence does not establish complete native formatting, journal replay,) Tj
+T* (distributed write or repair algorithms. Treat those operations as unqualified) Tj
+T* (until they are independently demonstrated.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 14 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (References and qualification) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(Pinned source:) Tj
+T* (https://github.com/glandium/vmfs-tools/tree/4ab76ef5b074bdf06e4b518ff6d50439) Tj
+T* (de05ae7f/libvmfs . Relevant files are vmfs_volume.c, vmfs_lvm.c, vmfs_fs.c,) Tj
+T* (vmfs_metadata.h, vmfs_inode.c, vmfs_block.h, vmfs_bitmap.c and vmfs_dirent.c.) Tj
+T* (Compare independently formatted VMFS3, VMFS5 and upgraded images against) Tj
+T* (matching native host tools and a read-only reference. Test missing or) Tj
+T* (overlapping extents, corrupt block IDs, invalid bitmap geometry,) Tj
+T* (pointer-depth limits, zeroed allocation, inline files and locked metadata. A) Tj
+T* (useful reader requires exact admitted bitmap and allocation schemes; complete) Tj
+T* (original write and recovery documentation remains an open research) Tj
+T* (requirement. The historical appendices are not implementation certification.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 15 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.01 0.52 0.56 rg 50 747 116 5 re f
+1 1 1 rg BT /F2 11 Tf 50 807 Td (INFILTRATOR / FILESYSTEM ENGINEERING REFERENCE) Tj ET
+BT /F2 21 Tf 50 775 Td (VMFS - technical reference) Tj ET
+0.05 0.13 0.22 rg BT /F2 16 Tf 50 715 Td (Historical reference appendices) Tj ET
+BT /F1 11 Tf 15 TL 50 685 Td
+(The following pages preserve both earlier documents. Their dated status) Tj
+T* (claims do not establish current implementation or qualification.) Tj
+ET
+0.05 0.13 0.22 rg BT /F1 9 Tf 50 42 Td (Engineering chapter 16 | Original format, not provider qualification) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.04 0.54 0.60 rg 50 747 115 4 re f
+0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
+BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
+BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771 Tm (VMware VMFS3 / VMFS5) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 34 Tm (Filesystem-VMFS / engineering reference) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 512 34 Tm (PAGE 01) Tj ET
+BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711 Tm (HISTORY / ORIGINAL DESIGN / DISK FORMAT) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676 Tm (VMware VMFS3/VMFS5; VMFS6 belongs to its own repository. This is a design) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 660 Tm (contract, not a claim of implemented capabilities.) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 630 Tm (Native provider design and original-format reference. No independent runtime) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 614 Tm (provider has yet been qualified.) Tj ET
+BT /F2 11 Tf 0.02 0.50 0.55 rg 1 0 0 1 50 584 Tm (CONCEPTUAL MEDIA MAP - NOT A SECTOR MAP) Tj ET
+0.05 0.36 0.47 rg 50 507 238 62 re f
+BT /F2 11 Tf 1 1 1 rg 1 0 0 1 62 533 Tm (Volume / extents) Tj ET
+0.05 0.36 0.47 rg 301 507 238 62 re f
+BT /F2 11 Tf 1 1 1 rg 1 0 0 1 313 533 Tm (Metadata inventory) Tj ET
+0.05 0.36 0.47 rg 50 431 238 62 re f
+BT /F2 11 Tf 1 1 1 rg 1 0 0 1 62 457 Tm (File mappings) Tj ET
+0.05 0.36 0.47 rg 301 431 238 62 re f
+BT /F2 11 Tf 1 1 1 rg 1 0 0 1 313 457 Tm (Shared ownership) Tj ET
+BT /F2 10 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 404 Tm (History / architecture / allocation / integrity / implementation / tests) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.04 0.54 0.60 rg 50 747 115 4 re f
+0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
+BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
+BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771 Tm (VMware VMFS3 / VMFS5) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 34 Tm (Filesystem-VMFS / engineering reference) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 512 34 Tm (PAGE 02) Tj ET
+BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711 Tm (HISTORICAL CHRONOLOGY) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676 Tm (VMware VMFS is a clustered datastore filesystem for virtual-machine) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 660 Tm (workloads. VMFS3 and VMFS5 are historical generations; their layout and) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 644 Tm (shared-storage locking cannot be inferred from VMFS6 or ordinary local) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 628 Tm (filesystems.) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 598 Tm (The historic format and the InfiltratorOS implementation are distinct. An) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 582 Tm (external driver or archival utility is evidence, not a qualified production) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 566 Tm (provider.) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 536 Tm (https://github.com/glandium/vmfs-tools) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.04 0.54 0.60 rg 50 747 115 4 re f
+0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
+BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
+BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771 Tm (VMware VMFS3 / VMFS5) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 34 Tm (Filesystem-VMFS / engineering reference) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 512 34 Tm (PAGE 03) Tj ET
+BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711 Tm (ORIGINAL ON-DISK ARCHITECTURE) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676 Tm (Document supported versions and independently establish volume/extent) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 660 Tm (geometry, metadata records, inode/file mappings, namespace, allocation,) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 644 Tm (distributed ownership and journal semantics. The single native C/C++ engine) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 628 Tm (owns these format semantics; consumers provide bounded Common V2 host) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 612 Tm (services, never competing parsers.) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.04 0.54 0.60 rg 50 747 115 4 re f
+0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
+BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
+BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771 Tm (VMware VMFS3 / VMFS5) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 34 Tm (Filesystem-VMFS / engineering reference) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 512 34 Tm (PAGE 04) Tj ET
+BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711 Tm (ALLOCATION, INTEGRITY AND RECOVERY) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676 Tm (Reject unknown layouts, incomplete extent sets, contradictory ownership and) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 660 Tm (unsafe journal states. Shared-disk mutation requires proven distributed) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 644 Tm (locking, fencing and recovery; do not infer write support from external) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 628 Tm (read-only access. All arithmetic, offsets and lengths are checked before I/O.) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 612 Tm (Writable operations require exclusive access, explicit ordering, flush and) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 596 Tm (interruption/recovery evidence. Read-only operations leave the medium) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 580 Tm (unchanged.) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.04 0.54 0.60 rg 50 747 115 4 re f
+0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
+BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
+BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771 Tm (VMware VMFS3 / VMFS5) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 34 Tm (Filesystem-VMFS / engineering reference) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 512 34 Tm (PAGE 05) Tj ET
+BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711 Tm (DISK READ PATH / SOURCE EVIDENCE) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676 Tm (The central entry contains DESIGN.md only; no VMFS3/5 provider source has) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 660 Tm (been retained. Acquire appropriately licensed implementation evidence and) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 644 Tm (documented version-specific disk structures before selecting on-media) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 628 Tm (signatures, offsets or layout constants. Independent vmfs-tools read) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 612 Tm (comparisons may be useful, but no external provider, FUSE adapter or) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 596 Tm (unsupported cross-version assumptions may enter the production path.) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 580 Tm (Establish multi-extent and shared-disk ownership rules before any write.) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.04 0.54 0.60 rg 50 747 115 4 re f
+0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
+BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
+BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771 Tm (VMware VMFS3 / VMFS5) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 34 Tm (Filesystem-VMFS / engineering reference) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 512 34 Tm (PAGE 06) Tj ET
+BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711 Tm (COMMON V2 IMPLEMENTATION BOUNDARY) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676 Tm (Only infiltrator_filesystem_api_v2 is public. Target the genuine) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 660 Tm (PROBE/MOUNT/UNMOUNT/STAT/LIST/READ operations first; negotiate actual) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 644 Tm (supported operation masks. VOLUME, METADATA and DEFRAG operations \(including) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 628 Tm (MAP, PLAN, EXECUTE, VERIFY, RECOVER\) are individually qualified or refused.) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 612 Tm (Test Media uses the same provider's qualified format and namespace) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 596 Tm (operations. No FUSE, legacy ABI, private driver or kernel proxy. Hosted and) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 580 Tm (import-free freestanding profiles share the format engine, with generic) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 564 Tm (environment-specific host services.) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.04 0.54 0.60 rg 50 747 115 4 re f
+0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
+BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
+BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771 Tm (VMware VMFS3 / VMFS5) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 34 Tm (Filesystem-VMFS / engineering reference) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 512 34 Tm (PAGE 07) Tj ET
+BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711 Tm (ENGINEERING ACCEPTANCE / HOST I/O) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676 Tm (- A valid CORE descriptor with a real PROBE is mandatory. Every optional) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 660 Tm (operation has its own capability bit and non-null qualified callback;) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 644 Tm (unavailable operations have neither. Recognised format, unsupported feature,) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 628 Tm (corruption, host I/O failure and stale handles remain distinct outcomes.) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 598 Tm (- Use Common's sector-aligned bounded byte helpers. Validate partition) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 582 Tm (extent, logical/physical sector geometry and maximum transfer before reading.) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 566 Tm (Serialize overlapping read/modify/write sectors; request explicit flush) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 550 Tm (barriers. Never infer exclusivity from flags alone; require real exclusive) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 534 Tm (unmounted ownership before formatting or raw mutation. Require the Common) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 518 Tm (entropy service when the format needs a unique identity.) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.04 0.54 0.60 rg 50 747 115 4 re f
+0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
+BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
+BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771 Tm (VMware VMFS3 / VMFS5) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 34 Tm (Filesystem-VMFS / engineering reference) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 512 34 Tm (PAGE 08) Tj ET
+BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711 Tm (CONSUMERS / RELOCATION / TEST MEDIA) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676 Tm (- Qualify hosted and import-free freestanding profiles separately; enforce) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 660 Tm (module identity and trust, exact export set and actual packaged bytes. BOOT) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 644 Tm (and kernel are generic loaders; BOOT uses the same file in) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 628 Tm (/EFI/InfiltratorOS/BOOT/drivers_x64/, with the installed canonical copy in) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 612 Tm (/System/Filesystems/. No per-format .ko/.efi, FUSE, proxy, legacy ABI,) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 596 Tm (external formatter or consumer-side parsing substitutes for the engine.) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 566 Tm (- Test Media must format and populate through actual V2 FORMAT/CREATE/WRITE) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 550 Tm (operations; an independent formatter/reader may be a test oracle only, never) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 534 Tm (production fallback. Defragmentation maps, plans, execution, verification and) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 518 Tm (recovery require independent proof of ownership, data preservation and) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 502 Tm (interruption safety. Where not implemented they remain absent.) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.04 0.54 0.60 rg 50 747 115 4 re f
+0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
+BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
+BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771 Tm (VMware VMFS3 / VMFS5) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 34 Tm (Filesystem-VMFS / engineering reference) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 512 34 Tm (PAGE 09) Tj ET
+BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711 Tm (VALIDATION, RECOVERY AND COMPATIBILITY) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676 Tm (Use independently produced VMFS3/VMFS5 images and vmfs-tools as an) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 660 Tm (independent reader where compatible. Test missing extents, malformed metadata) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 644 Tm (and version refusal; VMFS6 must not be silently accepted. Compare file bytes) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 628 Tm (against an independent oracle, hash unchanged read-only images, inject short) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 612 Tm (I/O, corruption and interruption; validate exact published module separately) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 596 Tm (in BOOT and kernel. Use disposable media only. No new independent binary or) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 580 Tm (test pass is claimed.) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.04 0.54 0.60 rg 50 747 115 4 re f
+0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
+BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
+BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771 Tm (VMware VMFS3 / VMFS5) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 34 Tm (Filesystem-VMFS / engineering reference) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 512 34 Tm (PAGE 10) Tj ET
+BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711 Tm (BUILD, INSTALLATION AND RELEASE) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676 Tm (The target installation is /System/Filesystems/VMFS.so and) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 660 Tm (/System/Resources/Documentation/Filesystem-VMFS.pdf. Neither file is) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 644 Tm (currently distributed by this repository. Once the implementation qualifies,) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 628 Tm (the intended release is a portable amd64 DEB and CPU-native source-first RUN,) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 612 Tm (with GitHub's automatic source archive. No install or build command is) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 596 Tm (advertised before an executable build exists.) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 566 Tm (- New build and implementation code is native C/C++ and shell as appropriate,) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 550 Tm (no Python. The generic amd64 DEB and CPU-native source-downloading RUN are) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 534 Tm (the only manually published release assets; GitHub generates source archives.) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 518 Tm (RUN fetches exact versioned source and pinned Common dependency, verifies) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 502 Tm (integrity, compiles natively and installs the selected package; no source) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 486 Tm (archive or DEB embedded. Release immutable exact-main qualification only. No) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 470 Tm (release exists yet.) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 749 595 93 re f
+0.04 0.54 0.60 rg 50 747 115 4 re f
+0.78 0.82 0.86 RG 0.6 w 50 50 m 545 50 l S
+BT /F2 9 Tf 0.62 0.86 0.90 rg 1 0 0 1 50 801 Tm (INFILTRATOR / ORIGINAL FILESYSTEM HISTORY AND DESIGN) Tj ET
+BT /F2 19 Tf 1 1 1 rg 1 0 0 1 50 771 Tm (VMware VMFS3 / VMFS5) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 34 Tm (Filesystem-VMFS / engineering reference) Tj ET
+BT /F1 8 Tf 0.07 0.16 0.23 rg 1 0 0 1 512 34 Tm (PAGE 11) Tj ET
+BT /F2 14 Tf 0.02 0.45 0.50 rg 1 0 0 1 50 711 Tm (PRIMARY SOURCES AND IMPLEMENTATION STATUS) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 676 Tm (https://github.com/glandium/vmfs-tools) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 646 Tm () Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 630 Tm (https://github.com/Infiltrator-Projects/Filesystems/tree/101026021d9088d80b7f) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 614 Tm (0f472d9061f0e2c688a3/native/filesystems/vmfs) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 584 Tm () Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 568 Tm (https://github.com/Infiltrator-Projects/Libraries/blob/main/docs/FILESYSTEM_C) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 552 Tm (OMMON_ABI_V2.md) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 522 Tm (Independent VMFS3 and VMFS5 images; reject VMFS6, incomplete extents and) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 506 Tm (unqualified lock states. The central entry is design-only, not an) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 490 Tm (implementation. External vmfs-tools may serve as independent read-only) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 474 Tm (evidence. Compare independent payloads and unchanged-image hashes; inject) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 458 Tm (truncation, corruption and I/O faults. Establish exact-revision ABI, hosted) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 442 Tm (and import-free freestanding qualification, then independently test BOOT and) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 426 Tm (kernel integration. No local build, runtime or packaging qualification is) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 410 Tm (claimed.) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 380 Tm (Source extraction, implementation and release qualification remain) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 364 Tm (outstanding. This is a source-backed engineering reference, not a complete) Tj ET
+BT /F1 10.2 Tf 0.07 0.16 0.23 rg 1 0 0 1 50 348 Tm (original specification.) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 750 595 92 re f
+0.03 0.53 0.58 rg 50 747 120 4 re f
+0.75 0.82 0.86 RG .7 w 50 49 m 545 49 l S
+BT /F2 9 Tf 0.62 0.88 0.91 rg 1 0 0 1 50 803 Tm (INFILTRATOR / FILESYSTEM DESIGN & QUALIFICATION) Tj ET
+BT /F2 17 Tf 1 1 1 rg 1 0 0 1 50 773 Tm (VMFS - format and architecture) Tj ET
+BT /F1 8 Tf 0.34 0.4 0.44 rg 1 0 0 1 50 34 Tm (Filesystem-VMFS | Design-stage reference | 0b0f0ade72b5) Tj ET
+BT /F1 8 Tf 0.34 0.4 0.44 rg 1 0 0 1 505 34 Tm (PAGE 01) Tj ET
+BT /F2 12 Tf 0.02 0.48 0.52 rg 1 0 0 1 50 706 Tm (STATUS / DESIGN CONTRACT) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 681 Tm (This repository is at the design stage. No independent runtime provider, installation) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 665 Tm (package or qualified filesystem operations are claimed. This document is not an) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 649 Tm (installation or user manual.) Tj ET
+BT /F2 12 Tf 0.02 0.48 0.52 rg 1 0 0 1 50 614 Tm (Format scope) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 589 Tm (VMware VMFS3/VMFS5; VMFS6 belongs to its own repository. This is a design) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 573 Tm (contract, not a claim of implemented capabilities.) Tj ET
+BT /F2 12 Tf 0.02 0.48 0.52 rg 1 0 0 1 50 538 Tm (On-disk structures and ownership) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 513 Tm (Document supported versions and independently establish volume/extent geometry,) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 497 Tm (metadata records, inode/file mappings, namespace, allocation, distributed ownership) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 481 Tm (and journal semantics. The single native C/C++ engine owns these format semantics;) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 465 Tm (consumers provide bounded Common V2 host services, never competing parsers.) Tj ET
+BT /F2 11 Tf 0.02 0.48 0.52 rg 1 0 0 1 50 430 Tm (Conceptual provider boundary \(planned\)) Tj ET
+0.91 0.95 0.96 rg 50 385 110 30 re f
+BT /F2 9 Tf 0.08 0.16 0.23 rg 1 0 0 1 57 396 Tm (Native media) Tj ET
+0.03 0.53 0.58 RG 1 w 162 400 m 176 400 l S
+0.91 0.95 0.96 rg 178 385 110 30 re f
+BT /F2 9 Tf 0.08 0.16 0.23 rg 1 0 0 1 185 396 Tm (Bounded host I/O) Tj ET
+0.03 0.53 0.58 RG 1 w 290 400 m 304 400 l S
+0.91 0.95 0.96 rg 306 385 110 30 re f
+BT /F2 9 Tf 0.08 0.16 0.23 rg 1 0 0 1 313 396 Tm (Native engine) Tj ET
+0.03 0.53 0.58 RG 1 w 418 400 m 432 400 l S
+0.91 0.95 0.96 rg 434 385 110 30 re f
+BT /F2 9 Tf 0.08 0.16 0.23 rg 1 0 0 1 441 396 Tm (Common V2) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 750 595 92 re f
+0.03 0.53 0.58 rg 50 747 120 4 re f
+0.75 0.82 0.86 RG .7 w 50 49 m 545 49 l S
+BT /F2 9 Tf 0.62 0.88 0.91 rg 1 0 0 1 50 803 Tm (INFILTRATOR / FILESYSTEM DESIGN & QUALIFICATION) Tj ET
+BT /F2 17 Tf 1 1 1 rg 1 0 0 1 50 773 Tm (VMFS - integrity and failure) Tj ET
+BT /F1 8 Tf 0.34 0.4 0.44 rg 1 0 0 1 50 34 Tm (Filesystem-VMFS | Design-stage reference | 0b0f0ade72b5) Tj ET
+BT /F1 8 Tf 0.34 0.4 0.44 rg 1 0 0 1 505 34 Tm (PAGE 02) Tj ET
+BT /F2 12 Tf 0.02 0.48 0.52 rg 1 0 0 1 50 706 Tm (Integrity and mutation invariants) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 681 Tm (Reject unknown layouts, incomplete extent sets, contradictory ownership and unsafe) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 665 Tm (journal states. Shared-disk mutation requires proven distributed locking, fencing and) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 649 Tm (recovery; do not infer write support from external read-only access. All arithmetic,) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 633 Tm (offsets and lengths are checked before I/O. Writable operations require exclusive) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 617 Tm (access, explicit ordering, flush and interruption/recovery evidence. Read-only) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 601 Tm (operations leave the medium unchanged.) Tj ET
+BT /F2 12 Tf 0.02 0.48 0.52 rg 1 0 0 1 50 566 Tm (Failure and ownership policy) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 541 Tm (Validate before following on-disk references. Unsupported feature combinations,) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 525 Tm (malformed media, unavailable operations and host failures are distinct outcomes.) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 509 Tm (Mutation requires the ownership and ordering conditions in the design; read-only) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 493 Tm (operations must leave the source image unchanged.) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 750 595 92 re f
+0.03 0.53 0.58 rg 50 747 120 4 re f
+0.75 0.82 0.86 RG .7 w 50 49 m 545 49 l S
+BT /F2 9 Tf 0.62 0.88 0.91 rg 1 0 0 1 50 803 Tm (INFILTRATOR / FILESYSTEM DESIGN & QUALIFICATION) Tj ET
+BT /F2 17 Tf 1 1 1 rg 1 0 0 1 50 773 Tm (VMFS - interface and qualification) Tj ET
+BT /F1 8 Tf 0.34 0.4 0.44 rg 1 0 0 1 50 34 Tm (Filesystem-VMFS | Design-stage reference | 0b0f0ade72b5) Tj ET
+BT /F1 8 Tf 0.34 0.4 0.44 rg 1 0 0 1 505 34 Tm (PAGE 03) Tj ET
+BT /F2 12 Tf 0.02 0.48 0.52 rg 1 0 0 1 50 706 Tm (Common V2 boundary) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 681 Tm (Only infiltrator_filesystem_api_v2 is public. Target the genuine) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 665 Tm (PROBE/MOUNT/UNMOUNT/STAT/LIST/READ operations first; negotiate actual) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 649 Tm (supported operation masks. VOLUME, METADATA and DEFRAG operations \(including) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 633 Tm (MAP, PLAN, EXECUTE, VERIFY, RECOVER\) are individually qualified or refused.) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 617 Tm (Test Media uses the same provider's qualified format and namespace operations. No) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 601 Tm (FUSE, legacy ABI, private driver or kernel proxy. Hosted and import-free) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 585 Tm (freestanding profiles share the format engine, with generic environment-specific host) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 569 Tm (services.) Tj ET
+BT /F2 12 Tf 0.02 0.48 0.52 rg 1 0 0 1 50 534 Tm (Independent qualification) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 509 Tm (Use independently produced VMFS3/VMFS5 images and vmfs-tools as an independent) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 493 Tm (reader where compatible. Test missing extents, malformed metadata and version) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 477 Tm (refusal; VMFS6 must not be silently accepted. Compare file bytes against an) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 461 Tm (independent oracle, hash unchanged read-only images, inject short I/O, corruption and) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 445 Tm (interruption; validate exact published module separately in BOOT and kernel. Use) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 429 Tm (disposable media only. No new independent binary or test pass is claimed.) Tj ET
+
+%%Page
+0.05 0.13 0.22 rg 0 750 595 92 re f
+0.03 0.53 0.58 rg 50 747 120 4 re f
+0.75 0.82 0.86 RG .7 w 50 49 m 545 49 l S
+BT /F2 9 Tf 0.62 0.88 0.91 rg 1 0 0 1 50 803 Tm (INFILTRATOR / FILESYSTEM DESIGN & QUALIFICATION) Tj ET
+BT /F2 17 Tf 1 1 1 rg 1 0 0 1 50 773 Tm (VMFS - engineering acceptance) Tj ET
+BT /F1 8 Tf 0.34 0.4 0.44 rg 1 0 0 1 50 34 Tm (Filesystem-VMFS | Design-stage reference | 0b0f0ade72b5) Tj ET
+BT /F1 8 Tf 0.34 0.4 0.44 rg 1 0 0 1 505 34 Tm (PAGE 04) Tj ET
+BT /F2 12 Tf 0.02 0.48 0.52 rg 1 0 0 1 50 706 Tm (Engineering and release acceptance) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 681 Tm (- A valid CORE descriptor with a real PROBE is mandatory. Every optional operation) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 665 Tm (has its own capability bit and non-null qualified callback; unavailable operations have) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 649 Tm (neither. Recognised format, unsupported feature, corruption, host I/O failure and) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 633 Tm (stale handles remain distinct outcomes. - Use Common's sector-aligned bounded byte) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 617 Tm (helpers. Validate partition extent, logical/physical sector geometry and maximum) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 601 Tm (transfer before reading. Serialize overlapping read/modify/write sectors; request) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 585 Tm (explicit flush barriers. Never infer exclusivity from flags alone; require real exclusive) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 569 Tm (unmounted ownership before formatting or raw mutation. Require the Common entropy) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 553 Tm (service when the format needs a unique identity. - Qualify hosted and import-free) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 537 Tm (freestanding profiles separately; enforce module identity and trust, exact export set) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 521 Tm (and actual packaged bytes. BOOT and kernel are generic loaders; BOOT uses the same) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 505 Tm (file in /EFI/InfiltratorOS/BOOT/drivers_x64/, with the installed canonical copy in) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 489 Tm (/System/Filesystems/. No per-format .ko/.efi, FUSE, proxy, legacy ABI, external) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 473 Tm (formatter or consumer-side parsing substitutes for the engine. - Test Media must) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 457 Tm (format and populate through actual V2 FORMAT/CREATE/WRITE operations; an) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 441 Tm (independent formatter/reader may be a test oracle only, never production fallback.) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 425 Tm (Defragmentation maps, plans, execution, verification and recovery require independent) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 409 Tm (proof of ownership, data preservation and interruption safety. Where not implemented) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 393 Tm (they remain absent. - New build and implementation code is native C/C++ and shell as) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 377 Tm (appropriate, no Python. The generic amd64 DEB and CPU-native source-downloading) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 361 Tm (RUN are the only manually published release assets; GitHub generates source) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 345 Tm (archives. RUN fetches exact versioned source and pinned Common dependency, verifies) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 329 Tm (integrity, compiles natively and installs the selected package; no source archive or) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 313 Tm (DEB embedded. Release immutable exact-main qualification only. No release exists yet.) Tj ET
+BT /F2 12 Tf 0.02 0.48 0.52 rg 1 0 0 1 50 278 Tm (Source and authority) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 253 Tm (Prepared from README.md and native/filesystems/vmfs/DESIGN.md at revision) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 237 Tm (0b0f0ade72b53d1a4f4132fd031fd23530231599. The editable Markdown design and) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 221 Tm (migration status are authoritative. No test result, release or implemented capability) Tj ET
+BT /F1 10.5 Tf 0.08 0.16 0.23 rg 1 0 0 1 50 205 Tm (is inferred from this reference.) Tj ET
