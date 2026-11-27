@@ -4,7 +4,7 @@
 
 VMware VMFS is a clustered datastore filesystem used to store virtual-machine disks, configuration and other files on shared storage. This chapter treats the VMFS3 and VMFS5 layouts separately from VMFS6. VMFS5 introduced a unified block-size strategy for newly formatted volumes and expanded scalability; upgraded volumes may retain older geometry. The field-level evidence is Christophe Fillot and Mike Hommey's reverse-engineered vmfs-tools, commit 4ab76ef5b074bdf06e4b518ff6d50439de05ae7f. Its volume reader accepts versions 3 and 5 and explicitly restricts VMFS5 write access. The following is not an official complete vendor on-disk specification.
 
-VMFS3 and VMFS5 are historical datastore generations; do not infer their shared-storage locking from VMFS6 or ordinary local filesystems.
+Do not infer VMFS3/5 shared-storage locking from VMFS6 or ordinary local filesystems.
 
 ## Physical volume and filesystem information
 
