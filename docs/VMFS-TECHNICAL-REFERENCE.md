@@ -4,6 +4,8 @@
 
 VMware VMFS is a clustered datastore filesystem used to store virtual-machine disks, configuration and other files on shared storage. This chapter treats the VMFS3 and VMFS5 layouts separately from VMFS6. VMFS5 introduced a unified block-size strategy for newly formatted volumes and expanded scalability; upgraded volumes may retain older geometry. The field-level evidence is Christophe Fillot and Mike Hommey's reverse-engineered vmfs-tools, commit 4ab76ef5b074bdf06e4b518ff6d50439de05ae7f. Its volume reader accepts versions 3 and 5 and explicitly restricts VMFS5 write access. The following is not an official complete vendor on-disk specification.
 
+VMFS3 and VMFS5 are historical datastore generations; do not infer their shared-storage locking from VMFS6 or ordinary local filesystems.
+
 ## Physical volume and filesystem information
 
 The observed partition-relative volume information begins at 0x100000, with little-endian magic 0xC001D00D at offset 0 and 32-bit volume version at 4. LUN byte is at 14, 28-byte name at 18, 32-bit physical-size field at 95 and 16-byte volume UUID at 130. The reference describes the physical-size field as scaled by 256; validate its unit against known media. The filesystem address space starts 0x1000000 bytes after the volume-information base. Within the assembled logical volume, filesystem information begins at 0x200000 and has magic 0x2FABF15E. For a single partition and first extent beginning at segment zero, that corresponds to partition byte 0x1300000. For a whole-disk image, add the actual partition start. Validate partition boundaries rather than assuming a legacy MBR.
@@ -56,8 +58,14 @@ VMFS is designed for simultaneous access by hypervisor hosts. Logical ownership,
 
 An independent writer requires exact native allocation transitions, metadata update ordering, durable flush and recovery semantics, and proven exclusion of every other host. Moving a file block changes its ownership and every reference; subblock and pointer-block relocation also changes catalogue metadata. An apparent free bitmap bit alone does not authorise reuse while another host may hold a valid reference. Formatting must establish coherent extent metadata, filesystem information, root descriptor, allocator catalogues, heartbeats and recovery state. The available reverse-engineering evidence does not establish complete native formatting, journal replay, distributed write or repair algorithms. Treat those operations as unqualified until they are independently demonstrated.
 
+## Implementation and qualification boundary
+
+The original central design record contained no VMFS3/5 engine. The independent vmfs-tools reference now supplies version-specific reader evidence; it remains a test oracle, not a production fallback. Multi-extent and shared-lock mutation require separate evidence.
+
+Common V2 is the independent provider interface: https://github.com/Infiltrator-Projects/Libraries/blob/main/docs/FILESYSTEM_COMMON_ABI_V2.md . Negotiate real operation masks and media profiles. Use bounded host I/O, exclusive unmounted ownership and durable flush for mutation; distinguish unsupported, corrupt, I/O and stale-handle results. Test Media and Defragmenter use the same engine. Hosted, freestanding, BOOT, kernel, recovery and package qualification are independent. Current capability and release status belongs to the repository README and exact-source qualification records; historical evidence is not a current status claim.
+
+Historical source or test reference: https://github.com/Infiltrator-Projects/Filesystems/tree/101026021d9088d80b7f0f472d9061f0e2c688a3/native/filesystems/vmfs .
+
 ## References and qualification
 
-Pinned source: https://github.com/glandium/vmfs-tools/tree/4ab76ef5b074bdf06e4b518ff6d50439de05ae7f/libvmfs . Relevant files are vmfs_volume.c, vmfs_lvm.c, vmfs_fs.c, vmfs_metadata.h, vmfs_inode.c, vmfs_block.h, vmfs_bitmap.c and vmfs_dirent.c. Compare independently formatted VMFS3, VMFS5 and upgraded images against matching native host tools and a read-only reference. Test missing or overlapping extents, corrupt block IDs, invalid bitmap geometry, pointer-depth limits, zeroed allocation, inline files and locked metadata. A useful reader requires exact admitted bitmap and allocation schemes; complete original write and recovery documentation remains an open research requirement. The historical appendices are not implementation certification.
-
-The PDF preserves both earlier documents as historical appendices.
+Pinned source: https://github.com/glandium/vmfs-tools/tree/4ab76ef5b074bdf06e4b518ff6d50439de05ae7f/libvmfs . Relevant files are vmfs_volume.c, vmfs_lvm.c, vmfs_fs.c, vmfs_metadata.h, vmfs_inode.c, vmfs_block.h, vmfs_bitmap.c and vmfs_dirent.c. Compare independently formatted VMFS3, VMFS5 and upgraded images against matching native host tools and a read-only reference. Test missing or overlapping extents, corrupt block IDs, invalid bitmap geometry, pointer-depth limits, zeroed allocation, inline files and locked metadata. A useful reader requires exact admitted bitmap and allocation schemes; complete original write and recovery documentation remains an open research requirement.
