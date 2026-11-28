@@ -64,6 +64,10 @@ int main(int argc,char **argv){
  else {image=calloc(1,SIZE);assert(image);}
  IfsFsHostRuntimeV2 h={.abi_version=2,.structure_bytes=sizeof(h),.capabilities=IFS_FS_HOST_READ_ONLY,.volume_bytes=c.bytes,.maximum_transfer_bytes=4096,.context=&c,.read_at=rd,.allocate=allocate,.release=release};
  for(c.sector=512;c.sector<=4096;c.sector*=8){
+  /* A captured 512-byte-sector partition can end between 4 KiB boundaries.
+   * Do not advertise impossible host geometry. The aligned constructed
+   * fixture still exercises both transfer granularities. */
+  if(c.bytes%c.sector)continue;
   h.logical_sector_bytes=h.physical_sector_bytes=c.sector;
   if(argc==3){expect(core,&h,&c,IFS_FS_OK);continue;}
   memset(image,0,SIZE);fixture();expect(core,&h,&c,IFS_FS_OK);
