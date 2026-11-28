@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: VMFS Common V2 recognition qualification
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  recognition:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Infiltrator-Projects/Libraries
+          ref: 225e640ebed5351b1481bfbeef1a6144ca5146e7
+          path: Libraries
+          persist-credentials: false
+      - name: Native Common V2 hosted and import-free checks
+        run: |
+          test "$(git hash-object Libraries/include/infiltratr/filesystem_module_v2.h)" = 90730b68a53ecf6a6e304c789501f29c17c728c7
+          make check
+      - name: Independent upstream VMFS3 captured image
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/glandium/vmfs-tools.git build/oracle
+          git -C build/oracle checkout 4ab76ef5b074bdf06e4b518ff6d50439de05ae7f
+          test "$(git -C build/oracle hash-object test.img)" = 0f2ec66491ec8dbf414c3acd3945182c5b910928
+          cc -O2 -o build/imager build/oracle/imager/imager.c
+          build/imager -x build/oracle/test.img > build/foreign.img
+          sha256sum build/foreign.img > build/before
+          build/test_vmfs ./build/VMFS.so build/foreign.img
+          build/test_vmfs ./build/freestanding/VMFS.so build/foreign.img
+          sha256sum -c build/before
+      - name: Sanitizer qualification
+        run: |
+          make clean
+          make CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" check
