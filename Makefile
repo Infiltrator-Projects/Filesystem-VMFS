@@ -3,12 +3,13 @@ CC ?= cc
 CFLAGS ?= -O2
 BASE = -std=c11 -Wall -Wextra -Werror -I Libraries/include
 SRC = native/filesystems/vmfs/vmfs.c
+HDR = native/filesystems/vmfs/reader.h
 .PHONY: all check clean
 all: build/VMFS.so build/freestanding/VMFS.so
-build/VMFS.so: $(SRC) Makefile
+build/VMFS.so: $(SRC) $(HDR) Makefile
 	mkdir -p build
 	$(CC) $(BASE) $(CFLAGS) -fPIC -fvisibility=hidden -shared -Wl,-z,defs -o $@ $(SRC)
-build/freestanding/VMFS.so: $(SRC) Makefile
+build/freestanding/VMFS.so: $(SRC) $(HDR) Makefile
 	mkdir -p build/freestanding
 	$(CC) $(BASE) -O2 -march=x86-64 -DIFS_FREESTANDING -ffreestanding -fno-builtin -fno-stack-protector -fno-tree-loop-distribute-patterns -fPIC -fvisibility=hidden -shared -nostdlib -Wl,-z,defs,-Bsymbolic -o $@ $(SRC)
 build/test_vmfs: tests/test_vmfs.c
