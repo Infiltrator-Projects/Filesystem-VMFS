@@ -15,7 +15,16 @@ struct context{int fd,fail;uint32_t sector,allocs;uint64_t bytes;};
 static int rd(void *p,uint64_t off,void *out,uint32_t n){
  struct context *c=p;assert(n&&n<=4096u&&!(off%c->sector)&&!(n%c->sector)&&off<=c->bytes&&n<=c->bytes-off);
  if(c->fail)return -1;
- if(c->fd>=0)return pread(c->fd,out,n,(off_t)off)==(ssize_t)n?0:-1;
+ if(c->fd>=0){
+  if(pread(c->fd,out,n,(off_t)off)!=(ssize_t)n)return -1;
+  if(getenv("VMFS_TRACE")){
+   const uint8_t*p=out;
+   fprintf(stderr,"read %llu +%u:",(unsigned long long)off,n);
+   for(unsigned i=0;i<n&&i<96u;i++)fprintf(stderr," %02x",p[i]);
+   fputc('\n',stderr);
+  }
+  return 0;
+ }
  memcpy(out,image+off,n);return 0;
 }
 static void *allocate(void *p,size_t n){struct context*c=p;void *m=malloc(n);if(m)c->allocs++;return m;}

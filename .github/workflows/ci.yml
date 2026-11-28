@@ -30,7 +30,7 @@ jobs:
           cc -O2 -o build/imager build/oracle/imager/imager.c
           build/imager -x build/oracle/test.img > build/foreign.img
           sha256sum build/foreign.img > build/before
-          build/test_vmfs ./build/VMFS.so build/foreign.img
+          VMFS_TRACE=1 build/test_vmfs ./build/VMFS.so build/foreign.img
           build/test_vmfs ./build/freestanding/VMFS.so build/foreign.img
           sha256sum -c build/before
       - name: Sanitizer qualification
