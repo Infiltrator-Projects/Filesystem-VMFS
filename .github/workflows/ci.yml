@@ -37,3 +37,66 @@ jobs:
         run: |
           make clean
           make CFLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" check
+
+  publish:
+    needs: recognition
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Infiltrator-Projects/Libraries
+          ref: 225e640ebed5351b1481bfbeef1a6144ca5146e7
+          path: Libraries
+          persist-credentials: false
+      - name: Build, test and publish the exact native provider
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(cat VERSION)
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "Published version is immutable; increment VERSION for another release."
+            exit 0
+          fi
+          work=$(mktemp -d)
+          trap 'rm -rf -- "$work"' EXIT
+          sh scripts/build-release.sh portable dist
+          common=$(git -C Libraries rev-parse HEAD)
+          curl -fsSL --retry 3 "https://codeload.github.com/$GITHUB_REPOSITORY/tar.gz/$GITHUB_SHA" -o "$work/source.tar.gz"
+          curl -fsSL --retry 3 "https://codeload.github.com/Infiltrator-Projects/Libraries/tar.gz/$common" -o "$work/common.tar.gz"
+          source_hash=$(sha256sum "$work/source.tar.gz" | cut -d' ' -f1)
+          common_hash=$(sha256sum "$work/common.tar.gz" | cut -d' ' -f1)
+          run="dist/filesystem-vmfs-$version-native-installer.run"
+          sed -e "s/@SOURCE@/$GITHUB_SHA/g" -e "s/@COMMON@/$common/g" -e "s/@SOURCE_HASH@/$source_hash/g" -e "s/@COMMON_HASH@/$common_hash/g" -e "s/@VERSION@/$version/g" scripts/installer.in > "$run"
+          chmod +x "$run"
+          "$run" --profile aggressive --system-package-mode --build-only --output "$work/native"
+          deb="infiltrator-filesystem-vmfs_${version}_amd64.deb"
+          pdf="System/Resources/Documentation/Filesystem-VMFS.pdf"
+          so="System/Filesystems/VMFS.so"
+          for package in "dist/$deb" "$work/native/$deb"; do
+            test "$(dpkg-deb -f "$package" Package)" = 'infiltrator-filesystem-vmfs'
+            test "$(dpkg-deb -f "$package" Version)" = "$version"
+            test "$(dpkg-deb -f "$package" Architecture)" = amd64
+            expected=$(printf './%s\n' "$pdf" "$so" | sort)
+            actual=$(dpkg-deb --fsys-tarfile "$package" | tar -tf - | grep -v '/$' | sort)
+            test "$actual" = "$expected"
+            dpkg-deb -x "$package" "$work/extract"
+            cmp "docs/VMFS.pdf" "$work/extract/$pdf"
+            test "$(nm -D --defined-only "$work/extract/$so" | awk '{print $3}')" = infiltrator_filesystem_api_v2
+          done
+          test ! -e "/$pdf"
+          test ! -e "/$so"
+          sudo dpkg -i "$work/native/$deb"
+          cmp "docs/VMFS.pdf" "/$pdf"
+          cmp "$work/extract/$so" "/$so"
+          sudo dpkg --purge infiltrator-filesystem-vmfs
+          test ! -e "/$pdf"
+          test ! -e "/$so"
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+          gh release create "v$version" --target "$GITHUB_SHA" --title "VMFS v$version" --notes "Bounded single-extent VMFS3 direct-block read-only reader. Native FDC/FBB allocation validation and namespace. Captured independent VMFS3 image and populated structural fixtures passed; VMFS5 recognition only, authentic VMFS5/6 media, indirect/subblock support, mutation and physical BOOT remain unqualified." "dist/$deb" "$run"

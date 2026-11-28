@@ -7,3 +7,5 @@ The native C implementation uses Common V2 bounded host I/O only. It is not a ke
 ## Native direct namespace development
 
 CORE mount/stat/list/read and VOLUME query now implement bounded offline FDC/FBB bootstrap and allocation-checked direct reads. Populated structural fixtures exercise real descriptor and bitmap paths, including refusal of free-block payloads and mismatched bitmap counts. Captured VMFS3 image must pass the new namespace tests; genuine VMFS5 media remains outstanding. No runtime publication until independent qualification. Subblock, pointer blocks, distributed locking, mutation, recovery and physical integration are outstanding.
+
+Captured VMFS3 and populated structural tests passed in [46132534251](https://github.com/Infiltrator-Projects/Filesystem-VMFS/actions/runs/46132534251). VMFS5 mount is now explicitly refused pending genuine media; native release CI qualifies the exact new revision.

@@ -196,6 +196,8 @@ static int mount_volume(const IfsFsHostRuntimeV2*h,void**out,IfsFsVolumeInfoV2*i
  if(!out||!info||info->structure_bytes<sizeof(*info)||!ifs_fs_host_v2_valid(h))return IFS_FS_INVALID;
  *out=NULL;if((h->capabilities&(IFS_FS_HOST_READ_ONLY|IFS_FS_HOST_EXCLUSIVE))!=(IFS_FS_HOST_READ_ONLY|IFS_FS_HOST_EXCLUSIVE))return IFS_FS_ACCESS;
  uint32_t version;int rc=identify(h,&version);if(rc)return rc;
+ /* Genuine VMFS5 media is unavailable; recognise but do not mount. */
+ if(version!=3u)return IFS_FS_UNSUPPORTED;
  Volume*v=h->allocate(h->context,sizeof(*v));if(!v)return IFS_FS_NO_MEMORY;zero(v,sizeof(*v));v->h=h;v->version=version;
  uint8_t p[512],check[DESCRIPTOR];
  rc=read_bytes(h,VOL+LVM_OFFSET,p,sizeof(p));if(rc)goto done;v->size=le64(p);

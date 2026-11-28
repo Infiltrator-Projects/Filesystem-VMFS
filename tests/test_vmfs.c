@@ -108,6 +108,8 @@ static void mount_fixture(const IfsFsCoreOpsV2*core,IfsFsHostRuntimeV2*h,struct 
  assert(core->unmount(v)==0&&!c->allocs);
  p=image+FBB+512+MDH;put32(p+8,244);
  assert(core->mount(h,&v,&info)==IFS_FS_CORRUPT&&!v&&!c->allocs);
+ memset(image,0,SIZE);populated();put32(image+VOL+4,5);
+ assert(core->mount(h,&v,&info)==IFS_FS_UNSUPPORTED&&!v&&!c->allocs);
  h->capabilities&=~IFS_FS_HOST_EXCLUSIVE;
 }
 
